@@ -3,14 +3,14 @@ import tensorflow as tf
 from tensorflow import keras
 from scipy import fftpack
 
-def measure(object, probe, z_d):
+def measure(object, probe):
     """Measure the modulus squared at distance z_d
     """
     source = probe * object
     x, y, z = np.shape(source)
     dft = fftpack.fftshift(np.fft.fftn(fftpack.ifftshift(source)))
     matrix = np.square(dft)
-    return matrix[:, :, z_d] / np.square(x * y * z)
+    return matrix[:, :, 0] / np.square(x * y * z)
 
 def random_probe(shape):
     """Generate random probe with random ampltipude 
@@ -23,7 +23,7 @@ def random_object(shape):
     """
     return np.random.rand(*shape) * np.exp(2j*np.pi*np.random.rand(*shape))
 
-def generate_mnist_data(probe, z_d, n_train = 1000, depth = 10, n_test = 100, chunk_size = 100):
+def generate_mnist_data(probe, n_train = 1000, depth = 10, n_test = 100):
     """Generate MNIST training data with 3D complex valued tensor as the object function, 
     real and imaginary part of the data are decoupled
     """
@@ -38,11 +38,11 @@ def generate_mnist_data(probe, z_d, n_train = 1000, depth = 10, n_test = 100, ch
     test_patterns = []
     
     for i in range(n_train):
-        patterns = measure(train_ims[i], probe, z_d)
+        patterns = measure(train_ims[i], probe)
         train_patterns.append(patterns)
     
     for i in range(n_test):
-        patterns = measure(test_ims[i], probe, z_d)
+        patterns = measure(test_ims[i], probe)
         test_patterns.append(patterns)
 
     return (train_patterns, train_ims), (test_patterns, test_ims)
@@ -56,4 +56,4 @@ if __name__ == '__main__':
     n_train = 500
     n_test = 100
     depth = 10
-    (tr_patterns, tr_images), (test_patterns, test_images) = generate_mnist_data(probe, z_d = 5, n_train = 1000, depth = shape[2], n_test = 100, chunk_size = 100)
+    (tr_patterns, tr_images), (test_patterns, test_images) = generate_mnist_data(probe, n_train = 1000, depth = shape[2], n_test = 100)
