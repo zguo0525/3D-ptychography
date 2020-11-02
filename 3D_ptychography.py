@@ -50,10 +50,10 @@ def measure_2D(object, probe):
     k = wavenumber(632.8e-9, 1)
     total_field = 0
     for i in range(z):
-        total_field += fft2d((source[:, :, i])) * bmp_operator(k, [x, y], z - i)
+        total_field += fft2d((source[:, :, i])) * bpm_operator(k, [x, y], z - i)
     return intensity(ifft2d(total_field) / V)
 
-def bmp_operator(k, shape, layer_thickness):
+def bpm_operator(k, shape, layer_thickness):
     """Compute the BPM operator for forward model
     """
     kx = shape[0]
@@ -96,6 +96,7 @@ def generate_mnist_data(probe, n_train = 1000, depth = 10, n_test = 100):
         test_patterns.append(patterns)
 
     return (train_patterns, train_ims), (test_patterns, test_ims)
+
 
 if __name__ == '__main__':
     shape = (28,28,10)
