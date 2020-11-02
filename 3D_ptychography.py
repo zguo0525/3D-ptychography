@@ -3,6 +3,21 @@ import tensorflow as tf
 from tensorflow import keras
 from scipy import fftpack
 
+def fft2d(x):
+    """Define 2D FFT function
+    """
+    return fftpack.fftshift(np.fft.fft2(fftpack.ifftshift(x)))
+
+def ifft2d(x):
+    """Define 2D inv FFT function
+    """
+    return fftpack.fftshift(np.fft.ifft2(fftpack.ifftshift(x)))
+
+def wavenumber(wavelength, index):
+    """Define wavenumber function generator
+    """
+    return 2 * np.pi * index/wavelength
+                            
 def measure(object, probe):
     """Measure the modulus squared at distance z_d
     """
@@ -11,6 +26,26 @@ def measure(object, probe):
     dft = fftpack.fftshift(np.fft.fftn(fftpack.ifftshift(source)))
     matrix = np.square(dft)
     return matrix[:, :, 0] / np.square(x * y * z)
+
+def measure_2D(object, probe):
+    """Using multi-slice method to simulate the forward model
+    """
+    source = probe * object
+    x, y, z = np.shape(source)
+    k = wavenumber(632.8e-9, 1)
+    total_field = 0
+    for i in range(z):
+        total_field += fft2d((source[:, :, i])) * bmp_operator(k, [x, y], z - i)
+    return ifft2d(total_field)
+
+def bmp_operator(k, shape, layer_thickness):
+    """Compute the BPM operator for forward model
+    """
+    kx = shape[0]
+    ky = shape[1]
+    Kx, Ky = np.meshgrid(kx, ky)
+    K2 = Kx**2 + Ky**2
+    return np.exp(-1j * (np.real(np.sqrt(k**2 - K2))) * layer_thickness)
 
 def random_probe(shape):
     """Generate random probe with random ampltipude 
@@ -57,3 +92,4 @@ if __name__ == '__main__':
     n_test = 100
     depth = 10
     (tr_patterns, tr_images), (test_patterns, test_images) = generate_mnist_data(probe, n_train = 1000, depth = shape[2], n_test = 100)
+    print(np.arange(-1,3,1))
