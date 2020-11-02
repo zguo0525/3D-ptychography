@@ -22,6 +22,15 @@ def intensity(x):
     """Return the measured intensity of the field
     """
     return np.square(np.abs(x))
+
+def optical_lens(shape, focal_length, u_inc):
+    """Simulate optical focusing lens
+    """
+    x, y, z = np.shape(shape)
+    X, Y = np.meshgrid(x, y)
+    Rs = np.sqrt(X**2 + Y**2)
+    k = wavenumber(632.8e-9, 1)
+    return np.multiply(u_inc, np.exp(-1j * k/2/focal_length * Rs))
                             
 def measure(object, probe):
     """Measure the modulus squared at distance z_d
