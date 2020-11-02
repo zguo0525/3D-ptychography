@@ -17,6 +17,11 @@ def wavenumber(wavelength, index):
     """Define wavenumber function generator
     """
     return 2 * np.pi * index/wavelength
+
+def intensity(x):
+    """Return the measured intensity of the field
+    """
+    return np.square(np.abs(x))
                             
 def measure(object, probe):
     """Measure the modulus squared at distance z_d
@@ -32,11 +37,12 @@ def measure_2D(object, probe):
     """
     source = probe * object
     x, y, z = np.shape(source)
+    V = x * y * z
     k = wavenumber(632.8e-9, 1)
     total_field = 0
     for i in range(z):
         total_field += fft2d((source[:, :, i])) * bmp_operator(k, [x, y], z - i)
-    return ifft2d(total_field)
+    return intensity(ifft2d(total_field) / V)
 
 def bmp_operator(k, shape, layer_thickness):
     """Compute the BPM operator for forward model
@@ -92,4 +98,5 @@ if __name__ == '__main__':
     n_test = 100
     depth = 10
     (tr_patterns, tr_images), (test_patterns, test_images) = generate_mnist_data(probe, n_train = 1000, depth = shape[2], n_test = 100)
-    print(np.arange(-1,3,1))
+    test = measure_2D(tr_images[0], probe)
+    print(test)
