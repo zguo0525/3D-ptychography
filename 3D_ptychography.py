@@ -49,8 +49,9 @@ def measure_2D(object, probe):
     V = x * y * z
     k = wavenumber(632.8e-9, 1)
     total_field = 0
-    for i in range(z):
-        total_field += fft2d((source[:, :, i])) * bpm_operator(k, [x, y], z - i)
+    for z_l in range(z):
+        total_field += fft2d(np.multiply(source[:, :, z_l], 
+                                         bpm_operator(k, [x, y], z - z_l)))
     return intensity(ifft2d(total_field) / V)
 
 def bpm_operator(k, shape, layer_thickness):
@@ -59,19 +60,40 @@ def bpm_operator(k, shape, layer_thickness):
     kx, ky = shape[0], shape[1]
     Kx, Ky = np.mgrid[:kx, :ky]
     K2 = Kx**2 + Ky**2
-    return np.exp(-1j * (np.real(np.sqrt(k**2 - K2))) * layer_thickness)
+    return fftpack.fftshift(np.exp(-1j * (np.real(np.sqrt(k**2 - K2))) * layer_thickness))
+
+def propagation_operator(k, shape, depth):
+    """Compute the forward propagation operator for BPM
+    """
+    kx, ky = shape[0], shape[1]
+    Kx, Ky = np.mgrid[:kx, :ky]
+    K2 = Kx**2 + Ky**2
+    return fftpack.fftshift(np.exp(-1j * (k - np.real(np.sqrt(k**2 - K2))) * depth))
+
+def bpm_probe(shape, position):
+    """Generate 3D gaussian probe in free space using beam propagation method
+    with given shape and focusing at the given position
+    """
+    beam = np.zeros(shape, dtype=complex)
+    beam[:, :, 0] = gaussian_probe(shape, position)[:, :, 0]
+    k = wavenumber(632.8e-9, 1)
+    for i in range(1, shape[2]):
+        beam[:, :, i] = ifft2d(np.multiply(fft2d(beam[:, :, i-1]), 
+                                           propagation_operator(k, shape, i)))
+    return beam
 
 def gaussian_probe(shape, position):
-    """Generate gaussian probe with ampltipude 
-    and phase with given shape
+    """Generate 3D gaussian probe with ampltipude 
+    and phase with given shape and center position with 
+    amplitude equation `E = e^{-((x-x_0)/w)^{2P}}`
     """
-    x, y, z = np.linspace(1, shape[0], shape[0]), np.linspace(1, shape[1], shape[1]), np.linspace(1, shape[2], shape[2])
     mx, my, mz = shape[0]//2 - position[0], shape[1]//2 - position[1], shape[2]//2
-    x, y, z = np.meshgrid(x, y, z)
-    amplitude = 1. / (2. * np.pi) * np.exp(-((x - mx)**2 + (y - my)**2+ (z - mz)**2))
+    x, y, z = np.mgrid[:shape[0], :shape[1], :shape[2]]
+    spot_size = 1 / np.sqrt(2 * np.log(2))
+    amplitude = 1. / (2. * np.pi) * np.exp(-(((x - mx)/spot_size)**2 + ((y - my)/spot_size)**2+ ((z - mz)/spot_size)**2))
     phase = np.zeros(shape, dtype=complex)
-    for k in range(shape[2]):
-        phase[:, :, k] = np.exp(2j * np.pi/1000 * k) 
+    for i in range(shape[2]):
+        phase[:, :, i] = np.exp(2j * np.pi/1000 * i) 
     return amplitude * phase
 
 def random_probe(shape):
@@ -115,7 +137,7 @@ if __name__ == '__main__':
     x, y, z = shape[0], shape[1], shape[2]
     print(x, y, z)
     #probe = random_probe(shape)
-    probe = gaussian_probe(shape,(1,1))
+    probe = bpm_probe(shape,(1,1))
     print(probe)
     #object = random_object(shape)
     #print(measure(probe, object, shape[2]//2))
