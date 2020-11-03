@@ -85,7 +85,7 @@ def bpm_probe(shape, position):
 def gaussian_probe(shape, position):
     """Generate 3D gaussian probe with ampltipude 
     and phase with given shape and center position with 
-    amplitude equation `E = e^{-((x-x_0)/w)^{2P}}`
+    amplitude equation in each coordinate via `E = e^{-((x-x_0)/w)^{2P}}`
     """
     mx, my, mz = shape[0]//2 - position[0], shape[1]//2 - position[1], shape[2]//2
     x, y, z = np.mgrid[:shape[0], :shape[1], :shape[2]]
@@ -93,8 +93,8 @@ def gaussian_probe(shape, position):
     amplitude = 1. / (2. * np.pi) * np.exp(-(((x - mx)/spot_size)**2 + ((y - my)/spot_size)**2+ ((z - mz)/spot_size)**2))
     phase = np.zeros(shape, dtype=complex)
     for i in range(shape[2]):
-        phase[:, :, i] = np.exp(2j * np.pi/1000 * i) 
-    return amplitude * phase
+        phase[:, :, i] = np.exp(2j * np.pi/100 * i) 
+    return np.multiply(amplitude, phase)
 
 def random_probe(shape):
     """Generate random probe with random ampltipude 
