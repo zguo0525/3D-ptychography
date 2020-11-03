@@ -27,7 +27,7 @@ def optical_lens(shape, focal_length, u_inc):
     """Simulate optical focusing lens
     """
     x, y, z = np.shape(shape)
-    X, Y = np.meshgrid(x, y)
+    X, Y = np.mgrid[:x, :y]
     Rs = np.sqrt(X**2 + Y**2)
     k = wavenumber(632.8e-9, 1)
     return np.multiply(u_inc, np.exp(-1j * k/2/focal_length * Rs))
@@ -56,11 +56,23 @@ def measure_2D(object, probe):
 def bpm_operator(k, shape, layer_thickness):
     """Compute the BPM operator for forward model
     """
-    kx = shape[0]
-    ky = shape[1]
-    Kx, Ky = np.meshgrid(kx, ky)
+    kx, ky = shape[0], shape[1]
+    Kx, Ky = np.mgrid[:kx, :ky]
     K2 = Kx**2 + Ky**2
     return np.exp(-1j * (np.real(np.sqrt(k**2 - K2))) * layer_thickness)
+
+def gaussian_probe(shape, position):
+    """Generate gaussian probe with ampltipude 
+    and phase with given shape
+    """
+    x, y, z = np.linspace(1, shape[0], shape[0]), np.linspace(1, shape[1], shape[1]), np.linspace(1, shape[2], shape[2])
+    mx, my, mz = shape[0]//2 - position[0], shape[1]//2 - position[1], shape[2]//2
+    x, y, z = np.meshgrid(x, y, z)
+    amplitude = 1. / (2. * np.pi) * np.exp(-((x - mx)**2 + (y - my)**2+ (z - mz)**2))
+    phase = np.zeros(shape, dtype=complex)
+    for k in range(shape[2]):
+        phase[:, :, k] = np.exp(2j * np.pi/1000 * k) 
+    return amplitude * phase
 
 def random_probe(shape):
     """Generate random probe with random ampltipude 
@@ -100,7 +112,11 @@ def generate_mnist_data(probe, n_train = 1000, depth = 10, n_test = 100):
 
 if __name__ == '__main__':
     shape = (28,28,10)
-    probe = random_probe(shape)
+    x, y, z = shape[0], shape[1], shape[2]
+    print(x, y, z)
+    #probe = random_probe(shape)
+    probe = gaussian_probe(shape,(1,1))
+    print(probe)
     #object = random_object(shape)
     #print(measure(probe, object, shape[2]//2))
     
@@ -109,4 +125,4 @@ if __name__ == '__main__':
     depth = 10
     (tr_patterns, tr_images), (test_patterns, test_images) = generate_mnist_data(probe, n_train = 1000, depth = shape[2], n_test = 100)
     test = measure_2D(tr_images[0], probe)
-    print(test)
+    #print(test)
