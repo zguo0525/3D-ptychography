@@ -137,7 +137,8 @@ if __name__ == '__main__':
     x, y, z = shape[0], shape[1], shape[2]
     print(x, y, z)
     #probe = random_probe(shape)
-    probe = bpm_probe(shape,(1,1))
+    position = (1,1)
+    probe = bpm_probe(shape,position)
     print(probe)
     #object = random_object(shape)
     #print(measure(probe, object, shape[2]//2))
