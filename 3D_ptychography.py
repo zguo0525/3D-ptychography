@@ -38,8 +38,7 @@ def measure(object, probe):
     source = probe * object
     x, y, z = np.shape(source)
     dft = fftpack.fftshift(np.fft.fftn(fftpack.ifftshift(source)))
-    matrix = np.square(dft)
-    return matrix[:, :, 0] / np.square(x * y * z)
+    return intensity(dft[:, :, 0] / (x * y * z))
 
 def measure_2D(object, probe):
     """Using multi-slice method to simulate the forward model
@@ -148,4 +147,7 @@ if __name__ == '__main__':
     depth = 10
     (tr_patterns, tr_images), (test_patterns, test_images) = generate_mnist_data(probe, n_train = 1000, depth = shape[2], n_test = 100)
     test = measure_2D(tr_images[0], probe)
-    #print(test)
+    from matplotlib import pyplot as plt
+    plt.imshow(np.abs(test))
+    plt.colorbar()
+    plt.figure()
