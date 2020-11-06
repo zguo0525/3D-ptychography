@@ -146,7 +146,7 @@ if __name__ == '__main__':
     n_test = 100
     depth = 10
     (tr_patterns, tr_images), (test_patterns, test_images) = generate_mnist_data(probe, n_train = 1000, depth = shape[2], n_test = 100)
-    test = measure_2D(tr_images[0], probe)
+    test = measure(tr_images[0], probe)
     from matplotlib import pyplot as plt
     plt.imshow(np.abs(test))
     plt.colorbar()
