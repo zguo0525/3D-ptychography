@@ -49,8 +49,11 @@ def measure_2D(object, probe):
     k = wavenumber(632.8e-9, 1)
     total_field = 0
     for z_l in range(z):
-        total_field += fft2d(np.multiply(source[:, :, z_l], 
-                                         bpm_operator(k, [x, y], z - z_l)))
+        total_field += np.multiply(fft2d(source[:, :, z_l]), bpm_operator(k, [x, y], z - z_l))
+        from matplotlib import pyplot as plt
+        plt.imshow(np.abs(total_field))
+        plt.colorbar()
+        plt.figure()
     return intensity(ifft2d(total_field) / V)
 
 def bpm_operator(k, shape, layer_thickness):
@@ -146,7 +149,7 @@ if __name__ == '__main__':
     n_test = 100
     depth = 10
     (tr_patterns, tr_images), (test_patterns, test_images) = generate_mnist_data(probe, n_train = 1000, depth = shape[2], n_test = 100)
-    test = measure(tr_images[0], probe)
+    test = measure_2D(tr_images[0], probe)
     from matplotlib import pyplot as plt
     plt.imshow(np.abs(test))
     plt.colorbar()
