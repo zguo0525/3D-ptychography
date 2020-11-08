@@ -65,31 +65,43 @@ def phase_contrast():
     """
     return k0 * pattern_depth * dn
 
-def ic_layout_object(width, height):
+def ic_layout_object(width, height, depth):
     """Generate ic layout as the object for scattering
     """
     samples = []
-    for i in range(0, 4):
+    for i in range(0, depth):
         # read IC layout
-        img = Image.open('object/layer' + str(i + 5) +'.png')
+        img = Image.open('object/layer' + str(i//4 + 5) +'.png')
         # final shape of the image
-        size = (2 * width, 2 * height)
+        size = (width, height)
+        # normalize the image
         img = np.asarray(img.resize(size))/255 - 1
-        # top left img
-        samples.append(img[0: width, 
-                        0: height])
-        # top right img
-        samples.append(img[width: 2 * width, 
-                        0: height])
-        # bottom left img
-        samples.append(img[0: width, 
-                        height: 2 * height])
-        # bottom right img
-        samples.append(img[width: 2 * width, 
-                        height: 2 * height])
+        samples.append(img)
+
     #convert it to complex value    
     samples = [np.exp(1j * sample * phase_contrast()) for sample in samples]
     return np.transpose(samples)
+
+def propagation_operator(k, probe, dx, dy, dz):
+    """BPM propagation operator in z
+    """
+    Nx, Ny = np.shape(probe)
+    Lx = Nx * dx
+    Ly = Ny * dy
+    dkx = 2 * np.pi /Lx
+    dky = 2 * np.pi /Ly
+    kx = np.arange(-Nx/2, Nx/2) * dkx
+    ky = np.arange(-Ny/2, Ny/2) * dky
+    Kx, Ky = np.meshgrid(kx, ky)
+    return fftpack.fftshift(np.exp(-1j * (k - np.real(np.sqrt(k**2 - Kx**2 - Ky**2))) * dz))
+
+def bpm_2d_probe_to_3d(probe, depth, propagation_operator_z):
+    """BPM propagation the probe in z
+    """
+    probe_3d = []
+    for i in range(depth):
+        probe_3d.append(ifft2d(np.multiply(fft2d(probe), propagation_operator_z)))
+    return np.transpose(probe_3d)
     
     
 
@@ -97,21 +109,41 @@ if __name__ == '__main__':
     # number of pixels
     Nx, Ny, Nz = 1024, 1024, 16
     # physical spacing between pixels
-    dx, dy, dz = 8e-6, 8e-6, 8e-6
+    dx, dy, dz = 8e-6, 8e-6, pattern_depth
     
     # generate coordinates
     X, Y, Z = real_coordinate(Nx, Ny, Nz, dx, dy, dz)
     Kx, Ky, Kz = k_coordinate(Nx, Ny, Nz, dx, dy, dz)
     
-    # plane wave propagating in z direction
+    # generate plane wave probe in z direction with shape (Nx, Ny, Nz)
     plane_wave_z = np.exp(1j * k * Z)
-    # generate spherical wave
+    # generate spherical wave probe with shape (Nx, Ny, Nz)
     spherical_wave = np.exp(1j * k * np.sqrt(X**2 + Y**2 + Z**2))
+    # get Yudong's probe with shape (256, 256)
+    yudong_probe = loadmat('yudong_illum_sample' + '.mat')['illum']
+    yudong_shape = np.shape(yudong_probe)
+    # get bpm operator 
+    propagation_operator_z = propagation_operator(k, yudong_probe, dx, dy, dz)
+    # get Yudong's probe in 3D with shape (256, 256, 16)
+    yudong_probe = bpm_2d_probe_to_3d(yudong_probe, Nz, propagation_operator_z)
+    
     # generate object based on ic layout
-    object = ic_layout_object(Nx, Ny)
+    object = ic_layout_object(Nx, Ny, Nz)
     
     # measure the far field pattern using the object and incident wave
     measured_spherical = measure(object, spherical_wave)
     measured_plane = measure(object, plane_wave_z)
     
-    print(measured_plane)
+    # scan yudong_probe to the object
+    scan_x = 10
+    scan_y = 10
+    measured_yudong = []
+    for i in range(scan_x):
+        for j in range(scan_y):
+            measured = measure(object[(Nx - yudong_shape[0])//scan_x * i : (Nx - yudong_shape[0])//scan_x * i + yudong_shape[0], 
+                                      (Ny - yudong_shape[1])//scan_y * j : (Ny - yudong_shape[1])//scan_y * j + yudong_shape[1], 
+                                      :], yudong_probe)
+            print(i, j)
+            measured_yudong.append(measured)
+            
+    print(np.shape(measured_yudong))
