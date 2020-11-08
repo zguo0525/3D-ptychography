@@ -60,23 +60,58 @@ def k_coordinate(Nx, Ny, Nz, dx, dy, dz):
     kx, ky, kz = np.arange(-Nx/2, Nx/2) * dkx, np.arange(-Ny/2, Ny/2) * dky, np.arange(-Nz/2, Nz/2) * dkz
     return np.meshgrid(kx, ky, kz)
 
-def phase_contrast(pattern_depth, dn):
+def phase_contrast():
     """Calculate the phase contrast
     """
     return k0 * pattern_depth * dn
-    
-    
 
+def ic_layout_object(width, height):
+    """Generate ic layout as the object for scattering
+    """
+    samples = []
+    for i in range(0, 4):
+        # read IC layout
+        img = Image.open('object/layer' + str(i + 5) +'.png')
+        # final shape of the image
+        size = (2 * width, 2 * height)
+        img = np.asarray(img.resize(size))/255 - 1
+        # top left img
+        samples.append(img[0: width, 
+                        0: height])
+        # top right img
+        samples.append(img[width: 2 * width, 
+                        0: height])
+        # bottom left img
+        samples.append(img[0: width, 
+                        height: 2 * height])
+        # bottom right img
+        samples.append(img[width: 2 * width, 
+                        height: 2 * height])
+    #convert it to complex value    
+    samples = [np.exp(1j * sample * phase_contrast()) for sample in samples]
+    return np.transpose(samples)
+    
+    
 
 if __name__ == '__main__':
     # number of pixels
     Nx, Ny, Nz = 1024, 1024, 16
-    # spacing
+    # physical spacing between pixels
     dx, dy, dz = 8e-6, 8e-6, 8e-6
+    
+    # generate coordinates
     X, Y, Z = real_coordinate(Nx, Ny, Nz, dx, dy, dz)
     Kx, Ky, Kz = k_coordinate(Nx, Ny, Nz, dx, dy, dz)
+    
     # plane wave propagating in z direction
     plane_wave_z = np.exp(1j * k * Z)
     # generate spherical wave
     spherical_wave = np.exp(1j * k * np.sqrt(X**2 + Y**2 + Z**2))
+    # generate object based on ic layout
+    object = ic_layout_object(Nx, Ny)
     
+    # measure the far field pattern using the object and incident wave
+    measured_spherical = measure(object, spherical_wave)
+    measured_plane = measure(object, plane_wave_z)
+    
+    print(measured_plane)
