@@ -18,6 +18,8 @@ dn = 0.0565
 pattern_depth = 575e-9
 
 def rect(x):
+    """Define rect function
+    """
     return np.where(np.abs(x)< 0.5, 1, 0)
 
 def fft2d(x):
@@ -71,27 +73,26 @@ def ic_layout_object(width, height, depth):
     samples = []
     for i in range(0, depth):
         # read IC layout
-        img = Image.open('object/layer' + str(i//4 + 5) +'.png')
+        img = Image.open('object/layer' + str(i + 5) +'.png')
         # final shape of the image
         size = (width, height)
         # normalize the image
         img = np.asarray(img.resize(size))/255 - 1
         samples.append(img)
 
-    #convert it to complex value    
-    samples = [np.exp(1j * sample * phase_contrast()) for sample in samples]
-    return np.transpose(samples)
+    # convert (depth, width, height) to (width, height, depth) 
+    samples = np.transpose(samples)
+    #convert it to complex value 
+    samples = np.exp(1j * samples * phase_contrast())
+    return samples
 
 def propagation_operator(k, probe, dx, dy, dz):
     """BPM propagation operator in z
     """
     Nx, Ny = np.shape(probe)
-    Lx = Nx * dx
-    Ly = Ny * dy
-    dkx = 2 * np.pi /Lx
-    dky = 2 * np.pi /Ly
-    kx = np.arange(-Nx/2, Nx/2) * dkx
-    ky = np.arange(-Ny/2, Ny/2) * dky
+    Lx, Ly = Nx * dx, Ny * dy
+    dkx, dky = 2 * np.pi /Lx, 2 * np.pi /Ly
+    kx, ky = np.arange(-Nx/2, Nx/2) * dkx, np.arange(-Ny/2, Ny/2) * dky
     Kx, Ky = np.meshgrid(kx, ky)
     return fftpack.fftshift(np.exp(-1j * (k - np.real(np.sqrt(k**2 - Kx**2 - Ky**2))) * dz))
 
@@ -104,7 +105,6 @@ def bpm_2d_probe_to_3d(probe, depth, propagation_operator_z):
     return np.transpose(probe_3d)
     
     
-
 if __name__ == '__main__':
     # number of pixels
     Nx, Ny, Nz = 1024, 1024, 16
