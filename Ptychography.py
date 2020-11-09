@@ -118,7 +118,7 @@ if __name__ == '__main__':
     # generate plane wave probe in z direction with shape (Nx, Ny, Nz)
     plane_wave_z = np.exp(1j * k * Z)
     # generate spherical wave probe with shape (Nx, Ny, Nz)
-    spherical_wave = np.exp(1j * k * np.sqrt(X**2 + Y**2 + Z**2))
+    spherical_wave = np.exp(-1j * k * np.sqrt(X**2 + Y**2 + Z**2))
     # get Yudong's probe with shape (256, 256)
     yudong_probe = loadmat('yudong_illum_sample' + '.mat')['illum']
     yudong_shape = np.shape(yudong_probe)
