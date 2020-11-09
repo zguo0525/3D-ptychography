@@ -99,15 +99,15 @@ def propagation_operator(k, probe, dx, dy, dz):
 def bpm_2d_probe_to_3d(probe, depth, propagation_operator_z):
     """BPM propagation the probe in z
     """
-    probe_3d = []
-    for i in range(depth):
+    probe_3d = [probe]
+    for i in range(depth - 1):
         probe_3d.append(ifft2d(np.multiply(fft2d(probe), propagation_operator_z)))
     return np.transpose(probe_3d)
     
     
 if __name__ == '__main__':
     # number of pixels
-    Nx, Ny, Nz = 1024, 1024, 16
+    Nx, Ny, Nz = 1024, 1024, 4
     # physical spacing between pixels
     dx, dy, dz = 8e-6, 8e-6, pattern_depth
     
@@ -141,9 +141,9 @@ if __name__ == '__main__':
     for i in range(scan_x):
         for j in range(scan_y):
             measured = measure(object[(Nx - yudong_shape[0])//scan_x * i : (Nx - yudong_shape[0])//scan_x * i + yudong_shape[0], 
-                                      (Ny - yudong_shape[1])//scan_y * j : (Ny - yudong_shape[1])//scan_y * j + yudong_shape[1], 
-                                      :], yudong_probe)
-            print(i, j)
+                                    (Ny - yudong_shape[1])//scan_y * j : (Ny - yudong_shape[1])//scan_y * j + yudong_shape[1], 
+                                    :], yudong_probe)
             measured_yudong.append(measured)
+            print(i, j)
             
     print(np.shape(measured_yudong))
