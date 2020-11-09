@@ -10,7 +10,7 @@ from PIL import Image
 wavelength = 632.8e-9
 n0 = 1.0
 n1 = 1.457
-k = 2 * np.pi / wavelength
+k = 2 * np.pi / wavelength * n0
 k0 = k
 k1 = n1 * k0
 # phase contrast of the parameters 
@@ -103,6 +103,8 @@ def bpm_2d_probe_to_3d(probe, depth, propagation_operator_z):
     for i in range(depth - 1):
         probe_3d.append(ifft2d(np.multiply(fft2d(probe), propagation_operator_z)))
     return np.transpose(probe_3d)
+
+print(phase_contrast())
     
     
 if __name__ == '__main__':
@@ -135,13 +137,13 @@ if __name__ == '__main__':
     measured_plane = measure(object, plane_wave_z)
     
     # scan yudong_probe to the object
-    scan_x = 10
-    scan_y = 10
+    scan_x = 20
+    scan_y = 20
     measured_yudong = []
     for i in range(scan_x):
         for j in range(scan_y):
-            measured = measure(object[(Nx - yudong_shape[0])//scan_x * i : (Nx - yudong_shape[0])//scan_x * i + yudong_shape[0], 
-                                    (Ny - yudong_shape[1])//scan_y * j : (Ny - yudong_shape[1])//scan_y * j + yudong_shape[1], 
+            measured = measure(object[(Nx - yudong_shape[0])//(scan_x-1) * i : (Nx - yudong_shape[0])//(scan_x-1) * i + yudong_shape[0], 
+                                    (Ny - yudong_shape[1])//(scan_y-1) * j : (Ny - yudong_shape[1])//(scan_y-1) * j + yudong_shape[1], 
                                     :], yudong_probe)
             measured_yudong.append(measured)
             print(i, j)
