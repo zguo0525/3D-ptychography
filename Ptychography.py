@@ -7,10 +7,10 @@ from scipy.io import loadmat
 from PIL import Image
 
 # physical parameters for the optical system
-wavelength = 632.8e-9
+wavelength = 0.14e-9
 n0 = 1.0
-n1 = 1.457
-k = 2 * np.pi / wavelength * n0
+n1 = 1.0
+k = 2 * np.pi / wavelength
 k0 = k
 k1 = n1 * k0
 # phase contrast of the parameters 
@@ -85,6 +85,32 @@ def ic_layout_object(width, height, depth):
     #convert it to complex value 
     samples = np.exp(1j * samples * phase_contrast())
     return samples
+
+def rgb2gray(rgb):
+    """Convert RGB image to greyscale
+    """
+    return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
+
+def ic_layer_13(width, height, depth):
+    """Generate ic layout 13 as the object for scattering
+    """
+    samples = []
+    for i in range(0, 13):
+        # read IC layout
+        img = Image.open('800_layers/layer' + str(i + 1) +'.jpg')
+        # final shape of the image
+        size = (width, height)
+        # normalize the image
+        img = np.asarray(img.resize(size))/255
+        img = rgb2gray(img)
+        samples.append(img)
+    
+    # convert (depth, width, height) to (width, height, depth) 
+    samples = np.transpose(samples)
+    #convert it to complex value 
+    samples = np.exp(1j * samples * phase_contrast())
+    return samples
+    
 
 def propagation_operator(k, probe, dx, dy, dz):
     """BPM propagation operator in z
