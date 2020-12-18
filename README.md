@@ -1,1 +1,1 @@
-# 3D-ptychography
+# 3D-ptychography using first-born approximation
